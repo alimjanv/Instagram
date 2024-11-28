@@ -1,17 +1,16 @@
 import re
 import threading
-
+from multiprocessing.connection import Client
 from django.core.mail import EmailMessage
 from django.template.loader import render_to_string
 from rest_framework.exceptions import ValidationError
-
+from decouple import config
 
 email_regex = r'[^@ \t\r\n]+@[^@ \t\r\n]+\.[^@ \t\r\n]+'
 phone_regex = r'^[\+]?[(]?[0-9]{3}[)]?[-\s\.]?[0-9]{3}[-\s\.]?[0-9]{4,6}$'
 
 
 def check_email_or_phone(email_or_phone):
-
     if re.fullmatch(email_regex, email_or_phone):
         email_or_phone = "email"
 
@@ -26,9 +25,6 @@ def check_email_or_phone(email_or_phone):
         raise ValidationError(data)
 
     return email_or_phone
-
-
-
 
 
 class EmailThread(threading.Thread):
@@ -66,4 +62,15 @@ def send_email(email, code):
             "body": html_content,
             "content_type": "html"
         }
+    )
+
+
+def send_phone_code(phone, code):
+    account_sid = config('account_sid')
+    auth_token = config('auth_token')
+    client = Client(account_sid, auth_token)
+    client.messages.create(
+        body=f'Salom, sizning tasdiqlash kodingiz {code}',
+        from_='+998912345678',
+        to=phone
     )
